@@ -1,8 +1,9 @@
 import Head from 'next/head'
 import Image from 'next/image'
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from '../styles/Home.module.css'
 
+import * as THREE from "three";
 
 export default function Home() {
 
@@ -13,9 +14,34 @@ export default function Home() {
   };
   const [resultURL,setResultURL]=useState<string>("");
   const [resultInfo,setResultInfo]=useState<string>("loading...");
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
 
   useEffect(()=>{
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas:canvasRef.current!,
+    });
+    renderer.setSize(256,256);
+    
+    const scene = new THREE.Scene();
+
+    const camera=new THREE.PerspectiveCamera(45,1/1,0.1,10);
+    camera.position.z=2;
+
+    const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+    const material = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+    const cube = new THREE.Mesh( geometry, material );
+    scene.add( cube );
+
+    renderer.setAnimationLoop((time: DOMHighResTimeStamp, frame: XRFrame)=>{
+      cube.rotation.x=time*0.001*30*THREE.MathUtils.DEG2RAD;
+      cube.rotation.y=time*0.001*60*THREE.MathUtils.DEG2RAD;
+      renderer.render(scene,camera);
+    })
+
+
 
     fetch(
       '/sdapi/v1/txt2img',{
@@ -30,12 +56,19 @@ export default function Home() {
         console.log(data);
         // setResultURL("https://dummyimage.com/256x256/000/fff.png");
         if(data.images && 0<data.images.length){
-          setResultURL(`data:image/png;base64,${data.images[0]}`);
+          const url=`data:image/png;base64,${data.images[0]}`;
+          setResultURL(url);
           setResultInfo(data.info);
+          material.map=new THREE.TextureLoader().load( url );
+          material.needsUpdate=true;
         }else{
           setResultInfo("no images");
         }
       });
+
+      return ()=>{
+        renderer.setAnimationLoop(null);
+      }
 
   },[]);
 
@@ -57,6 +90,8 @@ export default function Home() {
           <Image className={styles.figureImage} src={resultURL?resultURL:"https://dummyimage.com/256x256/000/fff.png?text=loading..."} alt="" width="256" height="256" />
           <figcaption  className={styles.figureFigcaption}>{resultInfo}</figcaption>
         </figure>
+
+        <canvas ref={canvasRef} className={styles.canvas} />
 
         <p className={styles.description}>
           Get started by editing{' '}
