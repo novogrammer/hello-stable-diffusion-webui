@@ -1,8 +1,45 @@
 import Head from 'next/head'
 import Image from 'next/image'
+import { useEffect, useState } from 'react';
 import styles from '../styles/Home.module.css'
 
+
 export default function Home() {
+
+  const payload={
+    prompt:"a photograph of an astronaut riding a horse",
+    // steps:1,
+    steps:5,
+  };
+  const [resultURL,setResultURL]=useState<string>("");
+  const [resultInfo,setResultInfo]=useState<string>("loading...");
+  
+
+  useEffect(()=>{
+
+    fetch(
+      '/sdapi/v1/txt2img',{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+        },
+        body:JSON.stringify(payload),
+      })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        // setResultURL("https://dummyimage.com/256x256/000/fff.png");
+        if(data.images && 0<data.images.length){
+          setResultURL(`data:image/png;base64,${data.images[0]}`);
+          setResultInfo(data.info);
+        }else{
+          setResultInfo("no images");
+        }
+      });
+
+  },[]);
+
+
   return (
     <div className={styles.container}>
       <Head>
@@ -15,6 +52,11 @@ export default function Home() {
         <h1 className={styles.title}>
           Welcome to <a href="https://nextjs.org">Next.js!</a>
         </h1>
+
+        <figure className={styles.figure}>
+          <Image className={styles.figureImage} src={resultURL?resultURL:"https://dummyimage.com/256x256/000/fff.png?text=loading..."} alt="" width="256" height="256" />
+          <figcaption  className={styles.figureFigcaption}>{resultInfo}</figcaption>
+        </figure>
 
         <p className={styles.description}>
           Get started by editing{' '}

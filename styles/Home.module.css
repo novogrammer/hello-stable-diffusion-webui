@@ -127,3 +127,15 @@
     filter: invert(1);
   }
 }
+
+.figure{
+
+}
+.figureImage{
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+}
+.figureFigcaption{
+
+}
